@@ -1,0 +1,148 @@
+﻿@model IEnumerable<DiskSpaceMonitor.Models.Quota>
+@using Newtonsoft.Json
+
+@{
+    ViewBag.Title = "Quota Monitoring";
+}
+
+<h2>Quota Monitoring</h2>
+
+<div>
+    <form method="get" asp-action="Index">
+        <div>
+            <label for="company">Select Company:</label>
+            <select id="company" name="company" onchange="this.form.submit()">
+                <option value="">All Companies</option>
+                @foreach (var item in ViewBag.CompanyList)
+                {
+                    var company = (item as Microsoft.AspNetCore.Mvc.Rendering.SelectListItem).Text;
+                    string selectedAttribute = ViewContext.HttpContext.Request.Query["company"] == company ? "selected=\"selected\"" : "";
+                    @: <option value="@company" @Html.Raw(selectedAttribute)>@company</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="service">Select Service:</label>
+            <select id="service" name="service" onchange="this.form.submit()">
+                <option value="">All Services</option>
+                @foreach (var service in (ViewBag.ServiceList as SelectList).Items)
+                {
+                    string selectedAttribute = ViewContext.HttpContext.Request.Query["service"] == service.ToString() ? "selected=\"selected\"" : "";
+                    @: <option value="@service" @Html.Raw(selectedAttribute)>@service</option>
+                }
+            </select>
+        </div>
+    </form>
+</div>
+
+<hr />
+
+<div>
+    <h3>Disk Usage Overview</h3>
+    <canvas id="quotaChart" width="400" height="200"></canvas>
+</div>
+
+<hr />
+
+<h3>Quota Details</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Company</th>
+            <th>Service</th>
+            <th>Total Size (GB)</th>
+            <th>Free Size (GB)</th>
+            <th>Used Size (GB)</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var quota in Model)
+    {
+        var parsedPath = quota.Path.Split('\\');
+        <tr>
+            <td>@(parsedPath.Length > 2 ? parsedPath[2] : "N/A")</td>
+            <td>@(parsedPath.Length > 3 ? parsedPath[3] : "N/A")</td>
+            <td>@quota.TotalSize</td>
+            <td>@quota.FreeSize</td>
+            <td>@quota.UsageSize</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Получаем данные из ViewBag
+            var chartData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.ChartData));
+            
+            console.log("Chart Data:", chartData); // Логирование для проверки
+
+            if (chartData && chartData.length > 0) {
+                var ctx = document.getElementById('quotaChart').getContext('2d');
+
+                if (!ctx) {
+                    console.error('Canvas element not found');
+                    return;
+                }
+
+                // Создаем массивы данных
+                var labels = chartData.map(data => data.Company);
+                var freeSizes = chartData.map(data => data.FreeSize);
+                var usageSizes = chartData.map(data => data.UsageSize);
+
+                // Уничтожаем старый график, если он существует
+                if (window.quotaChart instanceof Chart) {
+                    window.quotaChart.destroy();
+                }
+
+                // Строим новый график
+                window.quotaChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Free Size (GB)',
+                                data: freeSizes,
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Used Size (GB)',
+                                data: usageSizes,
+                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: 'Disk Usage by Company'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            } else {
+                console.warn('No chart data available');
+            }
+        });
+    </script>
+}
+
+

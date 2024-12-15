@@ -1,0 +1,28 @@
+﻿@model IEnumerable<DiskSpaceMonitor.Models.FileMetadata>
+
+<h1>File List</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>File Name</th>
+            <th>File Size</th>
+            <th>Created Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var file in Model)
+        {
+            <tr>
+                <td>@file.FileName</td>
+                <td>@file.FileSize</td>
+                <td>@file.CreatedDate</td>
+                <td>
+                    <a href="@Url.Action("Edit", new { id = file.Id })">Edit</a> |
+                    <a href="@Url.Action("Delete", new { id = file.Id })">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

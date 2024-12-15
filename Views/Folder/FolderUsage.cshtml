@@ -1,0 +1,226 @@
+﻿@model IEnumerable<DiskSpaceMonitor.Models.Folder>
+
+@{
+    ViewData["Title"] = "Folder Usage";
+}
+
+<h1>Folder Usage</h1>
+
+<!-- Форма для фильтров -->
+<form method="get">
+    <div class="form-group">
+        <label for="filterBy">Filter By:</label>
+        <select id="filterBy" name="filterBy" class="form-control" onchange="updateFilterValues()">
+            <option value="Company">Company</option>
+            <option value="Service">Service</option>
+            <option value="Department">Department</option>
+            <option value="Sector">Sector</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="filterValue">Filter Value:</label>
+        <select id="filterValue" name="filterValue" class="form-control">
+            <!-- Сюда будут динамически загружаться значения в зависимости от выбранного фильтра -->
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="timePeriod">Select Time Period:</label>
+        <select id="timePeriod" name="timePeriod" class="form-control">
+            <option value="">-- Select Time Period --</option>
+            <option value="7">Last 7 Days</option>
+            <option value="30">Last 30 Days</option>
+            <option value="180">Last 6 Months</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Apply Filters</button>
+</form>
+
+<hr />
+
+<!-- Таблица данных -->
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Company</th>
+            <th>Service</th>
+            <th>Department</th>
+            <th>Sector</th>
+            <th>Size (GB)</th>
+            <th>Server</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var folder in Model)
+        {
+            <tr>
+                <td>@folder.Company</td>
+                <td>@folder.Service</td>
+                <td>@folder.Department</td>
+                <td>@folder.Sector</td>
+                <td>@folder.Size GB</td>
+                <td>@folder.Server?.Name</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<hr />
+
+<!-- Линейный график изменений по времени -->
+<h2>Folder Usage Over Time</h2>
+<canvas id="usageChart" width="400" height="200"></canvas>
+
+<!-- Диаграмма по компаниям -->
+<h2>Folder Usage by Company</h2>
+<canvas id="companyChart" width="400" height="200"></canvas>
+
+<!-- Диаграмма по службам -->
+<h2>Folder Usage by Service</h2>
+<canvas id="serviceChart" width="400" height="200"></canvas>
+
+<!-- Диаграмма по отделам -->
+<h2>Folder Usage by Department</h2>
+<canvas id="departmentChart" width="400" height="200"></canvas>
+
+<!-- Диаграмма по секторам -->
+<h2>Folder Usage by Sector</h2>
+<canvas id="sectorChart" width="400" height="200"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Получаем данные для фильтров из ViewBag
+    var companies = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.Companies));
+    var services = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.Services));
+    var departments = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.Departments));
+    var sectors = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.Sectors));
+
+    // Функция для обновления значений во втором выпадающем списке
+    function updateFilterValues() {
+        var filterBy = document.getElementById('filterBy').value;
+        var filterValueSelect = document.getElementById('filterValue');
+
+        // Очищаем старые значения
+        filterValueSelect.innerHTML = '';
+
+        // Добавляем опцию по умолчанию
+        var defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Select a Value --';
+        filterValueSelect.appendChild(defaultOption);
+
+        // Заполняем список значениями в зависимости от выбранного фильтра
+        var values = [];
+        if (filterBy === 'Company') {
+            values = companies;
+        } else if (filterBy === 'Service') {
+            values = services;
+        } else if (filterBy === 'Department') {
+            values = departments;
+        } else if (filterBy === 'Sector') {
+            values = sectors;
+        }
+
+        // Добавляем новые значения в выпадающий список
+        values.forEach(function (value) {
+            var option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            filterValueSelect.appendChild(option);
+        });
+    }
+
+    // Инициализация значений при первой загрузке страницы
+    updateFilterValues();
+
+    // Данные для линейного графика использования по времени
+    const growthDates = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.GrowthDates))');
+    const totalSizes = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.TotalSizes))');
+
+    const usageChartCtx = document.getElementById('usageChart').getContext('2d');
+    const usageChart = new Chart(usageChartCtx, {
+        type: 'line', // Тип графика - линейный график
+        data: {
+            labels: growthDates, // Метки для оси X (даты)
+            datasets: [{
+                label: 'Folder Usage (GB)', // Легенда для графика
+                data: totalSizes, // Значения для оси Y
+                fill: false,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                tension: 0.1 // Параметр для плавности линии
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Usage (GB)'
+                    }
+                }
+            }
+        }
+    });
+
+    // Данные для других графиков
+    const companyLabels = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CompanyLabels))');
+    const companySizes = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.CompanySizes))');
+
+    const serviceLabels = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.ServiceLabels))');
+    const serviceSizes = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.ServiceSizes))');
+
+    const departmentLabels = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.DepartmentLabels))');
+    const departmentSizes = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.DepartmentSizes))');
+
+    const sectorLabels = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.SectorLabels))');
+    const sectorSizes = JSON.parse('@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.SectorSizes))');
+
+    // Функция для создания диаграмм
+    function createChart(ctx, labels, sizes, label, bgColor, borderColor) {
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: sizes,
+                    backgroundColor: bgColor,
+                    borderColor: borderColor,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        stepSize: 10
+                    }
+                }
+            }
+        });
+    }
+
+    // Создаем диаграммы для каждой категории
+    const companyChartCtx = document.getElementById('companyChart').getContext('2d');
+    createChart(companyChartCtx, companyLabels, companySizes, 'Size (GB)', 'rgba(75, 192, 192, 0.2)', 'rgba(75, 192, 192, 1)');
+
+    const serviceChartCtx = document.getElementById('serviceChart').getContext('2d');
+    createChart(serviceChartCtx, serviceLabels, serviceSizes, 'Size (GB)', 'rgba(255, 159, 64, 0.2)', 'rgba(255, 159, 64, 1)');
+
+    const departmentChartCtx = document.getElementById('departmentChart').getContext('2d');
+    createChart(departmentChartCtx, departmentLabels, departmentSizes, 'Size (GB)', 'rgba(153, 102, 255, 0.2)', 'rgba(153, 102, 255, 1)');
+
+    const sectorChartCtx = document.getElementById('sectorChart').getContext('2d');
+    createChart(sectorChartCtx, sectorLabels, sectorSizes, 'Size (GB)', 'rgba(255, 99, 132, 0.2)', 'rgba(255, 99, 132, 1)');
+</script>

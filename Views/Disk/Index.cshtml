@@ -1,0 +1,107 @@
+﻿@model IEnumerable<DiskSpaceMonitor.Models.Disk>
+
+@{
+    ViewData["Title"] = "Disks";
+}
+
+<h1>Disks</h1>
+
+<!-- Фільтри за сервером або групою серверів -->
+<form method="get">
+    <div class="form-group">
+        <label for="serverId">Select Server</label>
+        <select id="serverId" name="serverId" class="form-control" asp-items="ViewBag.Servers">
+            <option value="">All Servers</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="serverGroup">Filter by Server Group</label>
+        <select id="serverGroup" name="serverGroup" class="form-control">
+            <option value="All" selected>All Groups</option>
+            <option value="VY">FS-MAIN-VY**</option>
+            <option value="VX">FS-MAIN-VX**</option>
+        </select>
+    </div>
+    <input type="submit" value="Apply Filter" class="btn btn-primary" />
+</form>
+
+<hr />
+
+<!-- Таблиця з інформацією про диски -->
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Disk Name</th>
+            <th>Total Space (GB)</th>
+            <th>Free Space (GB)</th>
+            <th>Used Space (GB)</th>
+            <th>Server</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var disk in Model)
+        {
+            var totalSpaceGB = Math.Round(disk.TotalSpace / (1024.0 * 1024 * 1024), 2); // Конвертуємо в ГБ
+            var freeSpaceGB = Math.Round(disk.FreeSpace / (1024.0 * 1024 * 1024), 2);   // Конвертуємо в ГБ
+            var usedSpaceGB = Math.Round((disk.TotalSpace - disk.FreeSpace) / (1024.0 * 1024 * 1024), 2); // Конвертуємо в ГБ
+            <tr>
+                <td>@disk.Name</td>
+                <td>@totalSpaceGB</td>
+                <td>@freeSpaceGB</td>
+                <td>@usedSpaceGB</td>
+                <td>@disk.Server?.Name</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<hr />
+
+<!-- Графік використання дисків -->
+<h2>Disk Usage (Used and Free Space)</h2>
+<canvas id="diskUsageChart" width="400" height="200"></canvas>
+
+<!-- Підключення Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var ctx = document.getElementById('diskUsageChart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'bar', // Стовпчаста діаграма
+            data: {
+                labels: @Html.Raw(Json.Serialize(ViewBag.DiskLabels)), // Массив назв дисків
+                datasets: [{
+                    label: 'Used Space (GB)', // Використаний простір
+                    data: @Html.Raw(Json.Serialize(ViewBag.UsedSpaceData)), // Масив використаного простору
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'Free Space (GB)', // Вільний простір
+                    data: @Html.Raw(Json.Serialize(ViewBag.FreeSpaceData)), // Масив вільного простору
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true // Починати шкалу Y з нуля
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function (tooltipItem) {
+                                return tooltipItem.dataset.label + ': ' + tooltipItem.raw + ' GB';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>

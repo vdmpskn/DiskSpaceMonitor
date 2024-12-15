@@ -1,0 +1,111 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome to DiskSpaceMonitor</h1>
+    <p>Monitor and manage your disk space usage effectively with our intuitive web interface.</p>
+
+    <!-- Навигационные кнопки -->
+    <div class="mb-4">
+        <a href="http://localhost:5170/" class="btn btn-primary btn-lg">Home</a>
+        <a href="http://localhost:5170/folder/folderusage" class="btn btn-info btn-lg">Folder Usage</a>
+        <a href="http://localhost:5170/disk/index" class="btn btn-success btn-lg">Disks</a>
+    </div>
+
+    <!-- Простой график использования пространства -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Disk Space Usage</h5>
+            <p class="card-text">Here is a quick overview of your disk space usage. We recommend monitoring this regularly to avoid running out of space.</p>
+            <!-- Увеличиваем размер графика -->
+            <canvas id="diskUsageChart" style="height: 500px; width: 80%; background-color: #f8f9fa;"></canvas> <!-- Изменен размер графика -->
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Disk Space</h5>
+                    <p class="card-text">@ViewBag.TotalSpace GB</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Used Space</h5>
+                    <p class="card-text">@ViewBag.TotalUsedSpace GB</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Free Space</h5>
+                    <p class="card-text">@ViewBag.TotalFreeSpace GB</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ресурсы и документация -->
+    <hr>
+    <h4>Learn More</h4>
+    <p>For detailed information on how to use this app, check out our documentation and other helpful resources.</p>
+    <a href="https://learn.microsoft.com/aspnet/core" class="btn btn-link">Learn about ASP.NET Core</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Получаем данные из ViewBag и правильно сериализуем их в JSON
+    var usedSpace = @Html.Raw(Json.Serialize(ViewBag.UsedSpaceData)); // Используемое пространство
+    var freeSpace = @Html.Raw(Json.Serialize(ViewBag.FreeSpaceData)); // Свободное пространство
+
+    // Логируем данные, чтобы проверить, что они передаются правильно
+    console.log("Used Space Data: ", usedSpace);
+    console.log("Free Space Data: ", freeSpace);
+
+    // Получаем элемент для рисования графика
+    var ctx = document.getElementById('diskUsageChart').getContext('2d');
+    if (ctx) {
+        var myChart = new Chart(ctx, {
+            type: 'bar', // Тип графика - столбчатая диаграмма
+            data: {
+                labels: ['Used', 'Free'], // Метки для столбцов
+                datasets: [{
+                    label: 'Disk Space Usage',
+                    data: [
+                        usedSpace.reduce((a, b) => a + b, 0), // Суммируем данные для используемого пространства
+                        freeSpace.reduce((a, b) => a + b, 0)  // Суммируем данные для свободного пространства
+                    ],
+                    backgroundColor: ['#FF5733', '#4CAF50'], // Цвета столбцов
+                    borderColor: ['#FF5733', '#4CAF50'], // Цвет границ столбцов
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true, // График будет адаптивным
+                scales: {
+                    y: {
+                        beginAtZero: true, // Начинаем ось Y с нуля
+                        title: {
+                            display: true,
+                            text: 'Space in GB' // Подпись оси Y
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Space Type' // Подпись оси X
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        console.error("Error: Unable to find the chart container element.");
+    }
+</script>

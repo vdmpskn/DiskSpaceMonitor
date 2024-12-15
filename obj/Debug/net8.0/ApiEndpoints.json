@@ -1,0 +1,50 @@
+[
+  {
+    "ContainingType": "DiskSpaceMonitor.Controllers.DiskDataCollectionController",
+    "Method": "CollectDiskInfo",
+    "RelativePath": "api/DiskDataCollection/collect",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "DiskSpaceMonitor.Controllers.DiskDataCollectionController\u002BDiskDataRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "DiskSpaceMonitor.Controllers.FolderDataCollectionController",
+    "Method": "CollectFolderData",
+    "RelativePath": "api/FolderDataCollection/collect",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "DiskSpaceMonitor.Models.FolderDataRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "DiskSpaceMonitor.Controllers.QuotasController",
+    "Method": "PostQuota",
+    "RelativePath": "api/Quotas",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "quotaDto",
+        "Type": "DiskSpaceMonitor.Models.QuotaDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
